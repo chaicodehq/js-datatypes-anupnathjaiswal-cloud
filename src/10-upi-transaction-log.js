@@ -47,5 +47,81 @@
  *   //      frequentContact: "Swiggy", allAbove100: false, hasLargeTransaction: true }
  */
 export function analyzeUPITransactions(transactions) {
-  // Your code here
+    if (!Array.isArray(transactions) || transactions.length === 0) {
+        return null;
+    }
+
+    const validTransactions = transactions.filter((txn) => {
+        return (
+            txn &&
+            (txn.type === "credit" || txn.type === "debit") &&
+            typeof txn.amount === "number" &&
+            txn.amount > 0
+        );
+    });
+
+    if (validTransactions.length === 0) {
+        return null;
+    }
+
+    let totalCredit = 0;
+    let totalDebit = 0;
+    let amountSum = 0;
+
+    const categoryBreakdown = {};
+    const contactCount = {};
+
+    for (const txn of validTransactions) {
+        const { type, amount, category, to } = txn;
+
+        amountSum += amount;
+
+        if (type === "credit") {
+            totalCredit += amount;
+        } else {
+            totalDebit += amount;
+        }
+
+        if (category) {
+            categoryBreakdown[category] =
+                (categoryBreakdown[category] || 0) + amount;
+        }
+
+        if (to) {
+            contactCount[to] = (contactCount[to] || 0) + 1;
+        }
+    }
+
+    const highestTransaction = validTransactions.reduce((max, txn) => {
+        return txn.amount > max.amount ? txn : max;
+    });
+
+    let frequentContact = null;
+    let maxCount = 0;
+
+    for (const txn of validTransactions) {
+        const name = txn.to;
+        if (contactCount[name] > maxCount) {
+            maxCount = contactCount[name];
+            frequentContact = name;
+        }
+    }
+
+    const allAbove100 = validTransactions.every((txn) => txn.amount > 100);
+    const hasLargeTransaction = validTransactions.some(
+        (txn) => txn.amount >= 5000,
+    );
+
+    return {
+        totalCredit,
+        totalDebit,
+        netBalance: totalCredit - totalDebit,
+        transactionCount: validTransactions.length,
+        avgTransaction: Math.round(amountSum / validTransactions.length),
+        highestTransaction,
+        categoryBreakdown,
+        frequentContact,
+        allAbove100,
+        hasLargeTransaction,
+    };
 }
